@@ -34,12 +34,6 @@
             angle: Math.random() * Math.PI * 2 // 0から2πのランダムな角度
         };
 
-        let obstacles = [
-            { x: 200, y: 100, width: 100, height: 50 },
-            { x: 400, y: 250, width: 50, height: 150 },
-            { x: 100, y: 350, width: 200, height: 50 }
-        ];
-
         function drawPacman() {
             context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -74,13 +68,6 @@
             context.closePath();
         }
 
-        function drawObstacles() {
-            context.fillStyle = 'blue';
-            obstacles.forEach(obstacle => {
-                context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-            });
-        }
-
         function movePacman() {
             if (pacman.direction === 'right') {
                 pacman.x += pacman.speed;
@@ -98,8 +85,8 @@
         }
 
         function moveEnemy() {
-            const angleChange = Math.random() * 0.1 - 0.05; // -0.05から0.05のランダムな角度変化
-            enemy.angle += angleChange;
+            // ランダムな角度に移動する
+            enemy.angle += Math.random() * 0.1 - 0.05;
             enemy.x += enemy.speed * Math.cos(enemy.angle);
             enemy.y += enemy.speed * Math.sin(enemy.angle);
 
@@ -121,26 +108,6 @@
             }
         }
 
-        function detectObstacleCollision() {
-            obstacles.forEach(obstacle => {
-                if (pacman.x + pacman.radius > obstacle.x &&
-                    pacman.x - pacman.radius < obstacle.x + obstacle.width &&
-                    pacman.y + pacman.radius > obstacle.y &&
-                    pacman.y - pacman.radius < obstacle.y + obstacle.height) {
-                    // 障害物と衝突した場合、移動をキャンセルして元の位置に戻す
-                    if (pacman.direction === 'right') {
-                        pacman.x -= pacman.speed;
-                    } else if (pacman.direction === 'left') {
-                        pacman.x += pacman.speed;
-                    } else if (pacman.direction === 'up') {
-                        pacman.y += pacman.speed;
-                    } else if (pacman.direction === 'down') {
-                        pacman.y -= pacman.speed;
-                    }
-                }
-            });
-        }
-
         document.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowRight') {
                 pacman.direction = 'right';
@@ -157,10 +124,8 @@
             movePacman();
             moveEnemy();
             detectCollision();
-            detectObstacleCollision();
             drawPacman();
             drawEnemy();
-            drawObstacles();
             requestAnimationFrame(gameLoop);
         }
 
