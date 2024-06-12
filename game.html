@@ -1,135 +1,114 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>パックマン</title>
+    <title>3D Maze Game</title>
     <style>
-        canvas {
-            background-color: black;
-            display: block;
-            margin: 0 auto;
-        }
+        body { margin: 0; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const context = canvas.getContext('2d');
+        let scene, camera, renderer, player;
 
-        let pacman = {
-            x: 50,
-            y: 50,
-            radius: 20,
-            speed: 5,
-            direction: 'right'
-        };
+        function init() {
+            // シーンを作成
+            scene = new THREE.Scene();
 
-        let enemy = {
-            x: 300,
-            y: 200,
-            radius: 20,
-            speed: 4,
-            angle: Math.random() * Math.PI * 2 // 0から2πのランダムな角度
-        };
+            // カメラを作成
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1, -5);
 
-        function drawPacman() {
-            context.clearRect(0, 0, canvas.width, canvas.height);
+            // プレイヤーを作成
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1); // 棒人間の形状
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // 棒人間の色
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            scene.add(player);
 
-            context.beginPath();
-            let startAngle = 0.2 * Math.PI;
-            let endAngle = 1.8 * Math.PI;
-            if (pacman.direction === 'right') {
-                startAngle = 0.2 * Math.PI;
-                endAngle = 1.8 * Math.PI;
-            } else if (pacman.direction === 'left') {
-                startAngle = 1.2 * Math.PI;
-                endAngle = 0.8 * Math.PI;
-            } else if (pacman.direction === 'up') {
-                startAngle = 1.7 * Math.PI;
-                endAngle = 1.3 * Math.PI;
-            } else if (pacman.direction === 'down') {
-                startAngle = 0.7 * Math.PI;
-                endAngle = 0.3 * Math.PI;
-            }
-            context.arc(pacman.x, pacman.y, pacman.radius, startAngle, endAngle);
-            context.lineTo(pacman.x, pacman.y);
-            context.fillStyle = 'yellow';
-            context.fill();
-            context.closePath();
+            // レンダラーを作成
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 迷路を生成して描画
+            const maze = generateMaze(10, 10); // 10x10の迷路を生成
+            drawMaze(maze);
+
+            // アニメーションの開始
+            animate();
         }
 
-        function drawEnemy() {
-            context.beginPath();
-            context.arc(enemy.x, enemy.y, enemy.radius, 0, 2 * Math.PI);
-            context.fillStyle = 'red';
-            context.fill();
-            context.closePath();
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // プレイヤーの位置と方向をカメラに適用
+            camera.position.copy(player.position);
+            camera.position.y += 1; // プレイヤーの目の高さに合わせる
+            camera.rotation.copy(player.rotation);
+
+            // レンダリング
+            renderer.render(scene, camera);
         }
 
-        function movePacman() {
-            if (pacman.direction === 'right') {
-                pacman.x += pacman.speed;
-                if (pacman.x > canvas.width) pacman.x = 0;
-            } else if (pacman.direction === 'left') {
-                pacman.x -= pacman.speed;
-                if (pacman.x < 0) pacman.x = canvas.width;
-            } else if (pacman.direction === 'up') {
-                pacman.y -= pacman.speed;
-                if (pacman.y < 0) pacman.y = canvas.height;
-            } else if (pacman.direction === 'down') {
-                pacman.y += pacman.speed;
-                if (pacman.y > canvas.height) pacman.y = 0;
-            }
-        }
-
-        function moveEnemy() {
-            // ランダムな角度に移動する
-            enemy.angle += Math.random() * 0.1 - 0.05;
-            enemy.x += enemy.speed * Math.cos(enemy.angle);
-            enemy.y += enemy.speed * Math.sin(enemy.angle);
-
-            // 画面端に到達したら反対側に出る
-            if (enemy.x > canvas.width) enemy.x = 0;
-            if (enemy.x < 0) enemy.x = canvas.width;
-            if (enemy.y > canvas.height) enemy.y = 0;
-            if (enemy.y < 0) enemy.y = canvas.height;
-        }
-
-        function detectCollision() {
-            const dx = pacman.x - enemy.x;
-            const dy = pacman.y - enemy.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < pacman.radius + enemy.radius) {
-                alert('ゲームオーバー！');
-                // ここでゲームオーバーの処理を追加することができます
-                // 例えば、ゲームをリスタートしたり、スコアをリセットしたりします。
-            }
-        }
-
+        // キーボードの入力に応じてプレイヤーを動かす
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowRight') {
-                pacman.direction = 'right';
-            } else if (event.key === 'ArrowLeft') {
-                pacman.direction = 'left';
-            } else if (event.key === 'ArrowUp') {
-                pacman.direction = 'up';
-            } else if (event.key === 'ArrowDown') {
-                pacman.direction = 'down';
+            const speed = 0.1;
+            switch (event.key) {
+                case 'ArrowUp':
+                    player.translateZ(-speed);
+                    break;
+                case 'ArrowDown':
+                    player.translateZ(speed);
+                    break;
+                case 'ArrowLeft':
+                    player.rotateY(0.1);
+                    break;
+                case 'ArrowRight':
+                    player.rotateY(-0.1);
+                    break;
             }
         });
 
-        function gameLoop() {
-            movePacman();
-            moveEnemy();
-            detectCollision();
-            drawPacman();
-            drawEnemy();
-            requestAnimationFrame(gameLoop);
+        // 迷路を生成する関数
+        function generateMaze(width, height) {
+            // ここで迷路を生成するアルゴリズムを実装する
+            // 例えば、プリムのアルゴリズムやDFSを使用することができます
+            const maze = [];
+
+            // ダミーの迷路を生成する例
+            for (let i = 0; i < height; i++) {
+                const row = [];
+                for (let j = 0; j < width; j++) {
+                    // ここで壁の有無をランダムに決定する
+                    const isWall = Math.random() < 0.3; // 30%の確率で壁とする
+                    row.push(isWall);
+                }
+                maze.push(row);
+            }
+
+            return maze;
         }
 
-        gameLoop();
+        // 迷路を描画する関数
+        function drawMaze(maze) {
+            const wallGeometry = new THREE.BoxGeometry(1, 2, 1); // 壁の形状
+            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // 壁の色
+
+            maze.forEach((row, i) => {
+                row.forEach((isWall, j) => {
+                    if (isWall) {
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall.position.set(j, 0, -i); // Three.jsではy軸が上下逆転していることに注意
+                        scene.add(wall);
+                    }
+                });
+            });
+        }
+
+        init();
     </script>
 </body>
 </html>
