@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft装置の作り方</title>
+  <style>
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minecraft装置の作り方</h1>
+
+  <label for="selectDevice">作りたい装置を選択してください：</label>
+  <select id="selectDevice" onchange="showDevice(this.value)">
+    <option value="">選択してください</option>
+    <option value="redstone_door">自動ドア</option>
+    <option value="mob_grinder">モブグラインダー</option>
+    <option value="potion_brewing">ポーション自動醸造装置</option>
+  </select>
+
+  <div id="deviceInfo"></div>
+
+  <script>
+    function showDevice(device) {
+      if (device === "redstone_door") {
+        document.getElementById("deviceInfo").innerHTML = `
+          <h2>必要なアイテム</h2>
+          <ul>
+            <li>レッドストーン x 6</li>
+            <li>レッドストーントーチ x 1</li>
+            <li>ドア x 1</li>
+            <li>レバー x 1</li>
+          </ul>
+
+          <h2>作り方の画像</h2>
+          <img src="redstone_door_step1.jpg" alt="Step 1: ドアの設置">
+          <p>Step 1: ドアの設置</p>
+          <img src="redstone_door_step2.jpg" alt="Step 2: レバーの設置">
+          <p>Step 2: レバーの設置</p>
+          <img src="redstone_door_step3.jpg" alt="Step 3: レッドストーンの設置">
+          <p>Step 3: レッドストーンの設置`;
+
+      } else if (device === "mob_grinder") {
+        document.getElementById("deviceInfo").innerHTML = `
+          <h2>必要なアイテム</h2>
+          <ul>
+            <li>ブロック x 20</li>
+            <li>水バケツ x 1</li>
+            <li>レッドストーン x 10</li>
+          </ul>
+
+          <h2>作り方の画像</h2>
+          <img src="mob_grinder_step1.jpg" alt="Step 1: ブロックの配置">
+          <p>Step 1: ブロックの配置</p>
+          <img src="mob_grinder_step2.jpg" alt="Step 2: 水バケツの設置">
+          <p>Step 2: 水バケツの設置</p>
+          <img src="mob_grinder_step3.jpg" alt="Step 3: レッドストーンの設置">
+          <p>Step 3: レッドストーンの設置</p>`;
+
+      } else if (device === "potion_brewing") {
+        document.getElementById("deviceInfo").innerHTML = `
+          <h2>必要なアイテム</h2>
+          <ul>
+            <li>ピストン x 1</li>
+            <li>レッドストーン x 10</li>
+            <li>レッドストーントーチ x 2</li>
+            <li>醸造台 x 1</li>
+            <li>ホッパー x 1</li>
+            <li>ガラス瓶 x 3</li>
+            <li>ポーション成分 (醸造したいポーションの材料)</li>
+          </ul>
+
+          <h2>作り方の画像</h2>
+          <img src="potion_brewing_step1.jpg" alt="Step 1: レッドストーンの設置">
+          <p>Step 1: レッドストーンの設置</p>
+          <img src="potion_brewing_step2.jpg" alt="Step 2: ピストンの設置">
+          <p>Step 2: ピストンの設置</p>
+          <img src="potion_brewing_step3.jpg" alt="Step 3: 醸造台とホッパーの設置">
+          <p>Step 3: 醸造台とホッパーの設置</p>
+          <img src="potion_brewing_finished.jpg" alt="完成図: ポーション自動醸造装置">
+          <p>完成図: ポーション自動醸造装置</p>`;
+      } else {
+        document.getElementById("deviceInfo").innerHTML = "";
+      }
+    }
+  </script>
+</body>
+</html>
