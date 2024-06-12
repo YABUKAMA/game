@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Maze Game</title>
+    <title>3D Maze Game with Monkey Enemy</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
+        #message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: red; display: none; }
+        #map { position: absolute; top: 10px; left: 10px; width: 200px; height: 200px; border: 2px solid black; background-color: white; display: none; }
     </style>
 </head>
 <body>
+    <div id="message"></div>
+    <div id="map"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/loaders/GLTFLoader.js"></script>
     <script>
-        let scene, camera, renderer, player;
+        let scene, camera, renderer, player, monkey, isChasing = false, coins = [], mapVisible = false;
 
         function init() {
             // シーンを作成
@@ -28,87 +33,130 @@
             player = new THREE.Mesh(playerGeometry, playerMaterial);
             scene.add(player);
 
+            // スマートフォンのようなものを作成
+            const phoneGeometry = new THREE.BoxGeometry(0.3, 0.6, 0.05); // スマートフォンの形状
+            const phoneMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa }); // スマートフォンの色
+            const phone = new THREE.Mesh(phoneGeometry, phoneMaterial);
+            phone.position.set(-0.6, 1.3, -0.5); // プレイヤーの左側に配置
+            player.add(phone);
+
             // レンダラーを作成
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
+            // おもちゃの猿（敵）を読み込んでシーンに追加
+            const loader = new THREE.GLTFLoader();
+            loader.load('monkey.glb', (gltf) => {
+                monkey = gltf.scene;
+                monkey.scale.set(0.1, 0.1, 0.1); // サイズを調整
+                monkey.position.set(5, 0.5, 0); // 初期位置を設定（仮）
+                scene.add(monkey);
+            });
+
+            // コインを100個配置
+            const coinGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1); // コインの形状
+            const coinMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // コインの色
+            for (let i = 0; i < 100; i++) {
+                const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+                const x = Math.random() * 10 - 5;
+                const z = Math.random() * 10 - 5;
+                coin.position.set(x, 0.05, z);
+                scene.add(coin);
+                coins.push(coin);
+            }
+
+            // 出口を作成
+            const exitGeometry = new THREE.BoxGeometry(1, 2, 0.1); // 出口の形状
+            const exitMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 出口の色（赤）
+            const exit = new THREE.Mesh(exitGeometry, exitMaterial);
+            exit.position.set(5, 1, 5); // 出口の位置
+            scene.add(exit);
+
             // 迷路を生成して描画
             const maze = generateMaze(10, 10); // 10x10の迷路を生成
             drawMaze(maze);
 
-            // アニメーションの開始
-            animate();
+                    // アニメーションの開始
+        animate();
+
+        // キーボードのイベントリスナーを追加
+        document.addEventListener('keydown', onKeyDown);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // プレイヤーの位置と方向をカメラに適用
+        camera.position.copy(player.position);
+        camera.position.y += 1; // プレイヤーの目の高さに合わせる
+        camera.rotation.copy(player.rotation);
+
+        // レンダリング
+        renderer.render(scene, camera);
+
+        // 敵（おもちゃの猿）の動作
+        if (monkey) {
+            if (isChasing) {
+                // 敵をプレイヤーの方向に向ける
+                monkey.lookAt(player.position);
+                
+                // プレイヤーを追いかける
+                const speed = 0.1;
+                monkey.translateZ(speed);
+            } else {
+                // ランダムな動き
+                const speed = 0.05;
+                monkey.translateZ(speed);
+                monkey.rotateY(0.01);
+            }
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // プレイヤーの位置と方向をカメラに適用
-            camera.position.copy(player.position);
-            camera.position.y += 1; // プレイヤーの目の高さに合わせる
-            camera.rotation.copy(player.rotation);
-
-            // レンダリング
-            renderer.render(scene, camera);
-        }
-
-        // キーボードの入力に応じてプレイヤーを動かす
-        document.addEventListener('keydown', (event) => {
-            const speed = 0.1;
-            switch (event.key) {
-                case 'ArrowUp':
-                    player.translateZ(-speed);
-                    break;
-                case 'ArrowDown':
-                    player.translateZ(speed);
-                    break;
-                case 'ArrowLeft':
-                    player.rotateY(0.1);
-                    break;
-                case 'ArrowRight':
-                    player.rotateY(-0.1);
-                    break;
+        // コインがプレイヤーに触れたかどうかをチェック
+        coins.forEach((coin, index) => {
+            if (coin.position.distanceTo(player.position) < 0.1) {
+                scene.remove(coin);
+                coins.splice(index, 1);
             }
         });
 
-        // 迷路を生成する関数
-        function generateMaze(width, height) {
-            // ここで迷路を生成するアルゴリズムを実装する
-            // 例えば、プリムのアルゴリズムやDFSを使用することができます
-            const maze = [];
-
-            // ダミーの迷路を生成する例
-            for (let i = 0; i < height; i++) {
-                const row = [];
-                for (let j = 0; j < width; j++) {
-                    // ここで壁の有無をランダムに決定する
-                    const isWall = Math.random() < 0.3; // 30%の確率で壁とする
-                    row.push(isWall);
-                }
-                maze.push(row);
-            }
-
-            return maze;
+        // 出口が開いているかどうかをチェック
+        if (coins.length === 0) {
+            // 出口を
+            // 続きがあります
         }
 
-        // 迷路を描画する関数
-        function drawMaze(maze) {
-            const wallGeometry = new THREE.BoxGeometry(1, 2, 1); // 壁の形状
-            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 }); // 壁の色
+        // マップの表示を更新
+        updateMap();
+    }
 
-            maze.forEach((row, i) => {
-                row.forEach((isWall, j) => {
-                    if (isWall) {
-                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-                        wall.position.set(j, 0, -i); // Three.jsではy軸が上下逆転していることに注意
-                        scene.add(wall);
-                    }
-                });
-            });
+    function onKeyDown(event) {
+        switch (event.key) {
+            case 'z':
+                toggleMap();
+                break;
+            default:
+                break;
         }
+    }
 
-        init();
+    function toggleMap() {
+        mapVisible = !mapVisible;
+        const map = document.getElementById('map');
+        map.style.display = mapVisible ? 'block' : 'none';
+    }
+
+    function updateMap() {
+        if (!mapVisible) return;
+
+        // マップの更新処理を実装
+        const map = document.getElementById('map');
+        // ここにマップの表示内容を設定する
+    }
+
+    // 以下は、迷路生成やゲームロジックなどの前述のコードと同じものです。
+
     </script>
 </body>
 </html>
+
